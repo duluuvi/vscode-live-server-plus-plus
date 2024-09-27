@@ -1,75 +1,250 @@
-<p align="center">
-  <img width="128" height="128" src="https://raw.githubusercontent.com/ritwickdey/vscode-live-server-plus-plus/master/images/vscode-live-server-plus-plus.png">
-</p>
-<h3 align="center">Vscode Live Server++ (BETA) </h3>
-<p align="center">It's Truly Live<p>
+import random
+
+from math import sin, cos, pi, log
+
+from tkinter import *
+
+import tkinter
+
+CANVAS_WIDTH = 640
+
+CANVAS_HEIGHT = 480
+
+CANVAS_CENTER_X = CANVAS_WIDTH / 2
+
+CANVAS_CENTER_Y = CANVAS_HEIGHT / 2
+
+IMAGE_ENLARGE = 11
+
+HEART_COLOR = "#ff2121"
 
 
-[![VSCode Marketplace](https://img.shields.io/vscode-marketplace/v/ritwickdey.vscode-live-server-plus-plus.svg?style=flat-square&label=vscode%20marketplace)](https://marketplace.visualstudio.com/items?itemName=ritwickdey.vscode-live-server-plus-plus) [![Total Installs](https://img.shields.io/vscode-marketplace/d/ritwickdey.vscode-live-server-plus-plus.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=ritwickdey.vscode-live-server-plus-plus) [![Avarage Rating](https://img.shields.io/vscode-marketplace/r/ritwickdey.vscode-live-server-plus-plus.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=ritwickdey.vscode-live-server-plus-plus) [![Travis branch](https://img.shields.io/travis/com/ritwickdey/vscode-live-server-plus-plus/master.svg?style=flat-square&label=travis%20branch)](https://travis-ci.com/ritwickdey/vscode-live-server-plus-plus) [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/ritwickdey/vscode-live-server-plus-plus/)
 
----
+def heart_function(t, shrink_ratio: float = IMAGE_ENLARGE):
 
-![VSCode Live Server++](./images/vscode-live-server-plus-plus_preview1.gif)
 
----
-## Features
+    x = 16 * (sin(t) ** 3)
 
-- **No Need to save HTML, CSS, JS** :smile:
-- **No Browser full reload** (for HTML & CSS)
-- Customizable Server Root
-- Customizable Server Port
-- Customizable reloading time
-- Customizable index file (e.g `index.html`)
-- Auto Browser open (Mozila, Chrome & Edge)
-- Control from statusbar
+    y = -(13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t))
 
----
 
-## Downside
+    x *= shrink_ratio
 
-- `Live Server++` will work well if your project only contents `css` & `html` and minimal `JavaScript`. If you do lot of DOM Manupulation with JavaScript, `Live Server++` is not recommended.
+    y *= shrink_ratio
 
---- 
-## How to Start/Stop Server ?
 
-1. Open a project and click to `Go Live++` from the status bar to turn the server on/off.
+    x += CANVAS_CENTER_X
 
-2. Open the Command Pallete by pressing `F1` or `ctrl+shift+P` and type `Live Server++: Open Server` to start a server or type `Live Server++: Close Server` to stop a server.
+    y += CANVAS_CENTER_Y
 
----
+    return int(x), int(y)
 
-## Settings
 
-[Click here to read settings Docs](./docs/settings.md).
 
-## What's new ?
+def scatter_inside(x, y, beta=0.15):
 
-- ### v0.0.1 (##DATE##)
-  - Initial release
-  - hot Reload supported
-  - No need to save
-  - 5 settings are added (Port, Root, indexFile, timeout, browser)
 
----
+    ratio_x = - beta * log(random.random())
 
-## Changelog
+    ratio_y = - beta * log(random.random())
 
-To check full changelog [click here](CHANGELOG.md).
+    dx = ratio_x * (x - CANVAS_CENTER_X)
 
----
+    dy = ratio_y * (y - CANVAS_CENTER_Y)
 
-## Why `Live Server++` when there is a `Live Server` ?
+    return x - dx, y - dy
 
-Actually, I was receiving a lot of emails, PR, comments (and also there was few issue request, e.g. [#12080](https://github.com/Microsoft/vscode/issues/12080)) - `why auto reload only happens when we save the file`? - `why it's not realtime?`... blah blah....
 
-Well, in Live Server Extension, I'm using a popular npm module (named `live-server`) and it's the core library of Live Server. _(yaa! too many "Live Server" 😜)_. In the way it's working - it never possible auto reload without saving the file.
 
-And yaa, to be honest, when I made (in mid of `2017`) the live server extension, I didn't know Node.js or JavaScript well _(Hold on! I still don't know `Node.js` but I'm now confident)_. I even didn't know `promise`/`callback` well. I understood the `callback` _(& `callback hell` too)_ while making the extension. And `Promise`? Only I knew how to use it like `.then().then().then()` and `IIFE`? or `closure`? - I didn't even hear about those names at that time. 😬
+def shrink(x, y, ratio):
 
-Okay, now coming to the point, Code of the `Live Server` can't be migrated with `Live Server++`. `Live Server++` is not depended on `live-server`(the npm module) - I've written the server side code from scratch & it has minimal dependency (still under development).
 
----
+    force = -1 / (((x - CANVAS_CENTER_X) ** 2 + (y - CANVAS_CENTER_Y) ** 2) **
 
-## LICENSE
+                  0.6)
 
-This extension is licensed under the [MIT License](LICENSE)
+    dx = ratio * force * (x - CANVAS_CENTER_X)
+
+    dy = ratio * force * (y - CANVAS_CENTER_Y)
+
+    return x - dx, y - dy
+
+
+
+def curve(p):
+
+
+    return 2 * (2 * sin(4 * p)) / (2 * pi)
+
+
+
+class Heart:
+
+
+    def __init__(self, generate_frame=20):
+
+        self._points = set()
+
+        self._edge_diffusion_points = set()
+
+        self._center_diffusion_points = set()
+
+        self.all_points = {}
+
+        self.build(2000)
+
+        self.random_halo = 1000
+
+        self.generate_frame = generate_frame
+
+        for frame in range(generate_frame):
+
+            self.calc(frame)
+
+
+    def build(self, number):
+
+
+        for _ in range(number):
+
+            t = random.uniform(0, 2 * pi)
+
+            x, y = heart_function(t)
+
+            self._points.add((x, y))
+
+
+        for _x, _y in list(self._points):
+
+            for _ in range(3):
+
+                x, y = scatter_inside(_x, _y, 0.05)
+
+                self._edge_diffusion_points.add((x, y))
+
+
+        point_list = list(self._points)
+
+        for _ in range(4000):
+
+            x, y = random.choice(point_list)
+
+            x, y = scatter_inside(x, y, 0.17)
+
+            self._center_diffusion_points.add((x, y))
+
+
+    @staticmethod
+
+    def calc_position(x, y, ratio):
+
+
+        force = 1 / (((x - CANVAS_CENTER_X) ** 2 +
+
+                     (y - CANVAS_CENTER_Y) ** 2) ** 0.520)
+
+        dx = ratio * force * (x - CANVAS_CENTER_X) + random.randint(-1, 1)
+
+        dy = ratio * force * (y - CANVAS_CENTER_Y) + random.randint(-1, 1)
+
+        return x - dx, y - dy
+
+
+    def calc(self, generate_frame):
+
+        ratio = 10 * curve(generate_frame / 10 * pi)
+
+        halo_radius = int(4 + 6 * (1 + curve(generate_frame / 10 * pi)))
+
+        halo_number = int(
+
+            3000 + 4000 * abs(curve(generate_frame / 10 * pi) ** 2))
+
+        all_points = []
+
+
+        heart_halo_point = set()
+
+        for _ in range(halo_number):
+
+            t = random.uniform(0, 2 * pi)
+
+            x, y = heart_function(t, shrink_ratio=11.6)
+
+            x, y = shrink(x, y, halo_radius)
+
+            if (x, y) not in heart_halo_point:
+
+
+                heart_halo_point.add((x, y))
+
+                x += random.randint(-14, 14)
+
+                y += random.randint(-14, 14)
+
+                size = random.choice((1, 2, 2))
+
+                all_points.append((x, y, size))
+
+
+        for x, y in self._points:
+
+            x, y = self.calc_position(x, y, ratio)
+
+            size = random.randint(1, 3)
+
+            all_points.append((x, y, size))
+
+
+        for x, y in self._edge_diffusion_points:
+
+            x, y = self.calc_position(x, y, ratio)
+
+            size = random.randint(1, 2)
+
+            all_points.append((x, y, size))
+
+        for x, y in self._center_diffusion_points:
+
+            x, y = self.calc_position(x, y, ratio)
+
+            size = random.randint(1, 2)
+
+            all_points.append((x, y, size))
+
+        self.all_points[generate_frame] = all_points
+
+
+    def render(self, render_canvas, render_frame):
+
+        for x, y, size in self.all_points[render_frame % self.generate_frame]:
+
+            render_canvas.create_rectangle(
+
+                x, y, x + size, y + size, width=0, fill=HEART_COLOR)
+
+
+
+def draw(main: Tk, render_canvas: Canvas, render_heart: Heart, render_frame=0):
+
+    render_canvas.delete('all')
+
+    render_heart.render(render_canvas, render_frame)
+
+    main.after(160, draw, main, render_canvas, render_heart, render_frame + 1)
+
+
+
+if __name__ == '__main__':
+
+    root = Tk()
+
+    canvas = Canvas(root, bg='black', height=CANVAS_HEIGHT, width=CANVAS_WIDTH)
+
+    canvas.pack()
+
+    heart = Heart()
+
+    draw(root, canvas, heart)
+
+    root.mainloop()
